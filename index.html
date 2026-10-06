@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="it">
+<head>
+<title>Kit Prima Visita</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sopralluogo">
+<meta name="theme-color" content="#f3f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141816" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Layout: archivio visite -> scheda visita con due schede (Interno/Esterno), righe compatte apribili come una cartellina da cantiere */
+:root{
+  --bg:#f3f4f1; --surface:#ffffff; --line:#dfe2dc; --fg:#1d2420; --muted:#66706a;
+  --accent:#1f6b52; --accent-soft:#e2efe9; --warn:#a2560f; --warn-soft:#f8ead9; --danger:#b03a2e;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141816; --surface:#1c211e; --line:#2d3430; --fg:#e7ebe8; --muted:#97a19b;
+  --accent:#5fc59e; --accent-soft:#1f3a2f; --warn:#e8a25c; --warn-soft:#3a2a19; --danger:#ec7a6c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141816; --surface:#1c211e; --line:#2d3430; --fg:#e7ebe8; --muted:#97a19b;
+  --accent:#5fc59e; --accent-soft:#1f3a2f; --warn:#e8a25c; --warn-soft:#3a2a19; --danger:#ec7a6c; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4;margin:0}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+h1,h2{font-family:var(--f-display);margin:0;text-wrap:balance}
+h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5}
+.row-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* archivio */
+.head{display:flex;align-items:flex-end;gap:12px;padding-block:8px 18px}
+.list{display:flex;flex-direction:column;gap:8px}
+.vcard{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:left;width:100%}
+.vcard .t{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vcard .d{font-size:13px;color:var(--muted)}
+.vcard .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.meter{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;width:56px;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:28px 18px;text-align:center;color:var(--muted)}
+.status{font-size:13px;color:var(--muted);padding-block:6px}
+
+/* scheda visita */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px 10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.addr{width:100%;font-family:var(--f-display);font-weight:800;font-size:22px;border:0;background:transparent;color:var(--fg);padding:4px 0}
+.addr::placeholder{color:var(--muted)}
+.meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.meta input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--line);padding:3px;border-radius:10px;margin-top:10px}
+.tabs button{border:0;background:transparent;border-radius:8px;padding:7px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg)}
+
+.group{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.line{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 4px;min-height:44px}
+.chk{appearance:none;width:22px;height:22px;border:2px solid var(--muted);border-radius:6px;flex:none;margin:0 6px;display:grid;place-content:center;background:var(--surface)}
+.chk:checked{background:var(--accent);border-color:var(--accent)}
+.chk:checked::after{content:"";width:10px;height:6px;border-left:2.5px solid var(--surface);border-bottom:2.5px solid var(--surface);transform:rotate(-45deg) translate(1px,-1px)}
+.lbl{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:none;border:0;text-align:left;padding:4px 0}
+.lbl .txt{font-weight:600;min-width:0}
+.sub .lbl .txt{font-weight:400}
+.chev{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .15s}
+.open>.line .chev{transform:rotate(90deg)}
+.cnt{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tag{font-size:11px;font-weight:600;letter-spacing:.04em;background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:2px 6px;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nbtn{border:0;background:none;width:36px;height:36px;border-radius:8px;display:grid;place-content:center;color:var(--muted);flex:none}
+.nbtn.has{color:var(--warn)}
+.nbtn[aria-expanded="true"]{background:var(--accent-soft);color:var(--accent)}
+.subs{padding-left:28px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 45%,var(--surface))}
+.sub{border-top:1px solid var(--line)}
+.sub:first-child{border-top:0}
+.sub .line{min-height:40px;padding-block:3px}
+.sub .chk{width:20px;height:20px}
+.note{padding:0 10px 10px 40px;display:flex;flex-direction:column;gap:6px}
+.sub .note{padding-left:36px}
+.note textarea{width:100%;min-height:64px;resize:vertical;font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+.general{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.general textarea{width:100%;min-height:90px;font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.offline{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:3px 8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CHECKLIST = {
+  interno: [
+    {t:"Ingresso", s:["Vano scala","Ballatoio"]},
+    {t:"Porta blindata?", s:["Colore delle porte dei vicini"]},
+    {t:"Serramenti", s:["Singolo vetro","Doppio vetro"]},
+    {t:"Tapparelle", s:["Legno","Alluminio","PVC (plastica)","Elettriche oppure a corda"]},
+    {t:"Cielini, cassonetti o gelosie (persiane)", s:[]},
+    {t:"Balconi", s:["Ci sono?","Sono di passaggio per altri oppure no?"]},
+    {t:"Impianto elettrico", s:[]},
+    {t:"Porte interne", s:["Altezza superiore a 2,10 m","Larghezza superiore a 80 cm"]},
+    {t:"Foto al cortile interno + video", s:["Ci sono delle uscite dei box?","Ci sono bidoni della spazzatura?","Fili del bucato per il montascale","È troppo piccolo per far passare un camion?"]},
+    {t:"Muri (foto)", s:["Carta da parati sulle pareti?","Il muro è puntinato e irregolare?","Foto di traverso"]},
+    {t:"Veranda", s:["È condonata?"]},
+    {t:"Pavimenti", s:[]},
+    {t:"Bagno", s:[]},
+    {t:"Riscaldamento", s:["Autonomo: caldaia da sostituire?","Condominiale: termosifoni belli esteticamente?"]},
+    {t:"Boiler", s:["È da sostituire?"]},
+    {t:"Contatore gas", s:["Elettronico o vecchio tipo?"]},
+    {t:"Perdite o segni di umidità", s:[]},
+    {t:"Mq effettivi misurati con il laser", s:[]}
+  ],
+  esterno: [
+    {t:"Facciata", s:["Balconi","Cornicione"]},
+    {t:"Negozi sotto", s:["Locali normali","Locali rumorosi/notturni"]},
+    {t:"Stato portone", s:[]},
+    {t:"Citofono", s:["È nuovo? Videocitofono?","Tipologia di nomi"]},
+    {t:"Esposizione", s:[]},
+    {t:"Ascensore", s:["Dimensioni, è grande?","Arriva al piano?"]},
+    {t:"Vano scale", s:["Condizione ok?"]},
+    {t:"Pulizia del condominio", s:[]},
+    {t:"Cortile interno", s:["Limite di peso","Spazio di manovra","Spazio per rimozione macerie"]}
+  ]
+};
+const QUICK = ["OK","DA SOST","DA VERIF","NO","7/10"];
+const SECT = {interno:"Interno", esterno:"Esterno"};
+// id stabili: sezione-indice[-sub]
+function ids(sec){const out=[];CHECKLIST[sec].forEach((it,i)=>{out.push(`${sec}-${i}`);it.s.forEach((_,j)=>out.push(`${sec}-${i}-${j}`))});return out}
+const TOTAL = ids("interno").length+ids("esterno").length;
+
+let visits=[], current=null, tab="interno", openItems=new Set(), openNotes=new Set(), confirmDel=false, mode="loading";
+const app=document.getElementById("app");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+function done(v,sec){const c=v.check||{};return (sec?ids(sec):[...ids("interno"),...ids("esterno")]).filter(k=>c[k]).length}
+function fmtDate(d){if(!d)return"";const [y,m,g]=d.split("-");return `${g}/${m}/${y}`}
+const chev='<svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const pen='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+
+/* ---------- storage ---------- */
+const LS="kpv-visite";
+function lsLoad(){try{return JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){return[]}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify(visits))}catch(e){}}
+const pending={};
+function persist(v,immediate){
+  v.updated=Date.now();
+  clearTimeout(pending.t);
+  if(immediate)lsSave();else pending.t=setTimeout(lsSave,300);
+}
+
+/* ---------- render ---------- */
+function render(){
+  if(mode==="loading"){app.innerHTML='<div class="head"><div><div class="eyebrow">Kit prima visita</div><h1>Sopralluoghi</h1></div></div><div class="status">Carico l\'archivio…</div>';return}
+  current?renderVisit():renderList();
+}
+function renderList(){
+  const sorted=[...visits].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updated||0)-(a.updated||0));
+  app.innerHTML=`<div class="head"><div><div class="eyebrow">Kit prima visita</div><h1>Sopralluoghi</h1></div><div class="spacer"></div>${navigator.onLine?"":'<span class="offline">Offline</span>'}<button class="btn primary" id="new">+ Nuovo</button></div>
+  <div class="status">L'archivio è salvato su questo telefono.</div>
+  <div class="list">${sorted.length?sorted.map(v=>{const d=done(v);return `<button class="vcard" data-id="${esc(v.id)}"><div class="info"><span class="t">${esc(v.address||"Senza indirizzo")}</span><span class="d">${fmtDate(v.date)}</span></div><div><div class="meter">${d}/${TOTAL}</div><div class="bar"><i style="width:${Math.round(d/TOTAL*100)}%"></i></div></div></button>`}).join("")
+  :'<div class="empty">Nessun sopralluogo ancora.<br>Tocca <b>+ Nuovo</b> quando arrivi davanti al portone.</div>'}</div>`;
+  app.querySelector("#new").onclick=newVisit;
+  app.querySelectorAll(".vcard").forEach(b=>b.onclick=()=>{current=visits.find(v=>v.id===b.dataset.id);tab="interno";openItems.clear();openNotes.clear();confirmDel=false;render();scrollTo(0,0)});
+}
+function noteBlock(key){
+  const v=current.notes?.[key]||"";
+  return `<div class="note"><textarea id="n-${key}" data-k="${key}" placeholder="Scrivi una nota…">${esc(v)}</textarea><div class="chips">${QUICK.map(q=>`<button class="chip" data-q="${q}" data-k="${key}">${q}</button>`).join("")}</div></div>`;
+}
+function lineHtml(key,text,opts={}){
+  const c=!!current.check?.[key], n=current.notes?.[key]||"", no=openNotes.has(key);
+  return `<div class="line">
+    <input type="checkbox" class="chk" id="c-${key}" data-k="${key}" ${c?"checked":""} aria-label="${esc(text)}">
+    <button class="lbl" ${opts.toggle?`data-t="${key}" aria-expanded="${openItems.has(key)}"`:`data-c="${key}"`}>${opts.toggle?chev:""}<span class="txt">${esc(text)}</span>${opts.count||""}</button>
+    ${n&&!no?`<span class="tag">${esc(n.split("\n")[0])}</span>`:""}
+    <button class="nbtn ${n?"has":""}" data-n="${key}" aria-expanded="${no}" aria-label="Nota">${pen}</button>
+  </div>${no?noteBlock(key):""}`;
+}
+function renderVisit(){
+  const v=current;
+  const items=CHECKLIST[tab].map((it,i)=>{
+    const key=`${tab}-${i}`, hasSub=it.s.length>0, open=openItems.has(key);
+    const sd=it.s.filter((_,j)=>v.check?.[`${key}-${j}`]).length;
+    const count=hasSub?`<span class="cnt">${sd}/${it.s.length}</span>`:"";
+    return `<div class="item ${open?"open":""}">${lineHtml(key,it.t,{toggle:hasSub,count})}
+      ${hasSub&&open?`<div class="subs">${it.s.map((s,j)=>`<div class="sub">${lineHtml(`${key}-${j}`,s)}</div>`).join("")}</div>`:""}</div>`;
+  }).join("");
+  app.innerHTML=`<div class="top">
+    <div class="row-h"><button class="btn ghost" id="back">← Archivio</button><div class="spacer"></div>${navigator.onLine?"":'<span class="offline">Offline</span>'}<span class="meter">${done(v)}/${TOTAL}</span></div>
+    <input class="addr" id="addr" value="${esc(v.address)}" placeholder="Indirizzo, es. via Boston 72">
+    <div class="meta"><label for="date">Data</label><input type="date" id="date" value="${esc(v.date)}"></div>
+    <div class="tabs" role="tablist">${["interno","esterno"].map(s=>`<button role="tab" data-tab="${s}" aria-selected="${tab===s}">${SECT[s]} · ${done(v,s)}/${ids(s).length}</button>`).join("")}</div>
+  </div>
+  <div class="group">${items}</div>
+  <div class="general"><span class="eyebrow">Note generali</span><textarea id="gen" placeholder="Impressioni, prezzo richiesto, contatti dell'agenzia…">${esc(v.general)}</textarea></div>
+  <div class="actions">
+    <button class="btn primary" id="pdf">Esporta PDF</button>
+    <button class="btn ghost" id="exp">Apri tutto</button>
+    <div class="spacer"></div>
+    <button class="btn danger" id="del">${confirmDel?"Conferma eliminazione":"Elimina"}</button>
+    ${confirmDel?'<button class="btn ghost" id="undel">Annulla</button>':""}
+  </div>`;
+  bindVisit();
+}
+function bindVisit(){
+  const v=current;
+  app.querySelector("#back").onclick=()=>{current=null;render();scrollTo(0,0)};
+  app.querySelector("#addr").oninput=e=>{v.address=e.target.value;persist(v)};
+  app.querySelector("#date").onchange=e=>{v.date=e.target.value;persist(v,true)};
+  app.querySelector("#gen").oninput=e=>{v.general=e.target.value;persist(v)};
+  app.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+  app.querySelectorAll(".chk").forEach(c=>c.onchange=()=>{v.check={...(v.check||{}),[c.dataset.k]:c.checked};persist(v,true);render()});
+  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const k=b.dataset.c;v.check={...(v.check||{}),[k]:!v.check?.[k]};persist(v,true);render()});
+  app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const k=b.dataset.t;openItems.has(k)?openItems.delete(k):openItems.add(k);render()});
+  app.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const k=b.dataset.n;if(openNotes.has(k))openNotes.delete(k);else openNotes.add(k);render();if(openNotes.has(k)){const t=document.getElementById("n-"+k);t&&t.focus()}});
+  app.querySelectorAll(".note textarea").forEach(t=>t.oninput=()=>{v.notes={...(v.notes||{}),[t.dataset.k]:t.value};persist(v)});
+  app.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{const k=b.dataset.k,cur=v.notes?.[k]||"";v.notes={...(v.notes||{}),[k]:cur?cur+" "+b.dataset.q:b.dataset.q};persist(v,true);render();const t=document.getElementById("n-"+k);t&&t.focus()});
+  app.querySelector("#exp").onclick=()=>{CHECKLIST[tab].forEach((it,i)=>it.s.length&&openItems.add(`${tab}-${i}`));render()};
+  app.querySelector("#del").onclick=()=>{if(!confirmDel){confirmDel=true;render();return}deleteVisit(v)};
+  const u=app.querySelector("#undel");if(u)u.onclick=()=>{confirmDel=false;render()};
+  app.querySelector("#pdf").onclick=()=>exportPdf(v);
+}
+
+/* ---------- azioni ---------- */
+function newVisit(){
+  const d=new Date(),date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const id="v"+Date.now().toString(36);
+  const v={id,address:"",date,check:{},notes:{},general:"",updated:Date.now()};
+  visits.push(v);current=v;tab="interno";openItems.clear();openNotes.clear();confirmDel=false;
+  persist(v,true);render();setTimeout(()=>document.getElementById("addr")?.focus(),50);
+}
+function deleteVisit(v){
+  visits=visits.filter(x=>x.id!==v.id);current=null;confirmDel=false;
+  lsSave();
+  render();toast("Sopralluogo eliminato");
+}
+
+/* ---------- PDF ---------- */
+async function exportPdf(v){
+  if(!window.jspdf){toast("Libreria PDF non caricata, riprova tra poco");return}
+  const {jsPDF}=window.jspdf, doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=210,M=16;let y=M;
+  const need=h=>{if(y+h>285){doc.addPage();y=M}};
+  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text(v.address||"Senza indirizzo",M,y+4);y+=10;
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
+  doc.text(`Sopralluogo del ${fmtDate(v.date)}  ·  ${done(v)}/${TOTAL} voci controllate`,M,y);y+=8;doc.setTextColor(0);
+  for(const sec of ["interno","esterno"]){
+    need(14);doc.setFillColor(31,107,82);doc.rect(M,y,W-2*M,7,"F");doc.setTextColor(255);doc.setFont("helvetica","bold");doc.setFontSize(11);
+    doc.text(`${SECT[sec].toUpperCase()}  ${done(v,sec)}/${ids(sec).length}`,M+2,y+5);doc.setTextColor(0);y+=10;
+    CHECKLIST[sec].forEach((it,i)=>{
+      const rows=[[`${sec}-${i}`,it.t,0],...it.s.map((s,j)=>[`${sec}-${i}-${j}`,s,1])];
+      rows.forEach(([k,txt,lvl])=>{
+        const x=M+(lvl?8:0), note=v.notes?.[k]||"";
+        const nl=note?doc.splitTextToSize(note,W-2*M-90):[];
+        const tl=doc.splitTextToSize(txt,80-(lvl?8:0));
+        const h=Math.max(tl.length,nl.length)*4.6+1.6;need(h);
+        doc.setDrawColor(120);doc.rect(x,y-3.2,3.6,3.6);
+        if(v.check?.[k]){doc.setDrawColor(31,107,82);doc.setLineWidth(.6);doc.line(x+.7,y-1.4,x+1.6,y-.4);doc.line(x+1.6,y-.4,x+3,y-2.6);doc.setLineWidth(.2)}
+        doc.setFont("helvetica",lvl?"normal":"bold");doc.setFontSize(lvl?9.5:10.5);doc.text(tl,x+6,y);
+        if(nl.length){doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(162,86,15);doc.text(nl,M+92,y);doc.setTextColor(0)}
+        y+=h;
+      });
+      doc.setDrawColor(220);doc.line(M,y-2.4,W-M,y-2.4);y+=1;
+    });
+    y+=4;
+  }
+  if(v.general){need(16);doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("Note generali",M,y);y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);
+    doc.splitTextToSize(v.general,W-2*M).forEach(l=>{need(5);doc.text(l,M,y);y+=4.8})}
+  const name=`Sopralluogo ${(v.address||"senza indirizzo").replace(/[\\/:*?"<>|]/g,"")} ${v.date||""}.pdf`.trim();
+  try{doc.save(name);toast("PDF scaricato")}
+  catch(e){toast("Esportazione non riuscita: "+(e?.message||e))}
+}
+
+/* ---------- avvio ---------- */
+visits=lsLoad();mode="ready";render();
+window.addEventListener("pagehide",lsSave);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")lsSave()});
+function refreshBadge(){const a=document.activeElement;if(a&&(a.tagName==="TEXTAREA"||a.tagName==="INPUT"))return;render()}
+window.addEventListener("online",refreshBadge);window.addEventListener("offline",refreshBadge);
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
